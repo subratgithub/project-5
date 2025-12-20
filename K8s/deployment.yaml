@@ -16,8 +16,6 @@ spec:
     spec:
       containers:
         - name: sample-app
-          image: satya44jit/myapp:15   # ❌ NO TAG HERE
-          imagePullPolicy: Always
+          image: satya44jit/myapp:latest
           ports:
             - containerPort: 5000
-
