@@ -60,20 +60,17 @@ pipeline {
                 '''
             }
         }
-
         stage('Deploy to EKS') {
             steps {
                 sh '''
-                    echo "Updating deployment image..."
-                    sed -i "s|image:.*|image: $FULL_IMAGE|g" K8s/deployment.yaml
+                    echo "Updating image in deployment YAML..."
+                    sed -i "s|image:.*|image: ''' + "${DOCKERHUB_IMAGE}" + '''|" K8s/deployment.yaml
 
-                    echo "Applying Kubernetes manifests..."
+                    echo "Deploying to EKS..."
                     kubectl apply -f K8s/deployment.yaml
                     kubectl apply -f K8s/service.yaml
-
-                    echo "Checking rollout status..."
-                    kubectl rollout status deployment/myapp
                 '''
+            }
             }
         }
     }
