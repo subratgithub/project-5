@@ -60,17 +60,20 @@ pipeline {
                 '''
             }
         }
+
         stage('Deploy to EKS') {
             steps {
                 sh '''
                     echo "Updating image in deployment YAML..."
-                    sed -i "s|image:.*|image: ''' + "${DOCKERHUB_IMAGE}" + '''|" K8s/deployment.yaml
+                    sed -i "s|image:.*|image: $FULL_IMAGE|g" K8s/deployment.yaml
 
                     echo "Deploying to EKS..."
                     kubectl apply -f K8s/deployment.yaml
                     kubectl apply -f K8s/service.yaml
+
+                    echo "Checking rollout status..."
+                    kubectl rollout status deployment/dockerhub-sample-app
                 '''
-            }
             }
         }
     }
@@ -82,6 +85,8 @@ pipeline {
         failure {
             echo "❌ Pipeline failed. Please check logs."
         }
+        always {
+            sh 'docker logout'
+        }
     }
 }
-
