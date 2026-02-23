@@ -50,30 +50,25 @@ pipeline {
         }
 
         stage('Deploy to EKS') {
-            steps {
-                sh '''
-                    echo "Deploying to EKS..."
+    steps {
+        sh '''
+            echo "Deploying to EKS..."
 
-                    echo "Checking AWS identity..."
-                    aws sts get-caller-identity
+            aws sts get-caller-identity
 
-                    echo "Updating kubeconfig..."
-                    aws eks update-kubeconfig \
-                        --region us-east-1 \
-                        --name docker_eks_test_cluster
+            aws eks update-kubeconfig \
+                --region $AWS_REGION \
+                --name $EKS_CLUSTER_NAME
 
-                    echo "Verifying cluster access..."
-                    kubectl get nodes
+            kubectl get nodes
 
-                    echo "Updating image in YAML..."
-                    sed -i "s|image:.*|image: $FULL_IMAGE|g" K8s/app.yaml
+            sed -i "s|image:.*|image: $FULL_IMAGE|g" K8s/deployment.yaml
 
-                    echo "Applying Kubernetes manifests..."
-                    kubectl apply -f K8s/app.yaml
+            kubectl apply -f K8s/deployment.yaml
+            kubectl apply -f K8s/service.yaml
 
-                    echo "Waiting for rollout..."
-                    kubectl rollout status deployment/dockerhub-sample-app
-                '''
+            kubectl rollout status deployment/dockerhub-sample-app
+        '''
             }
         }
     }
