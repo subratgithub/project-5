@@ -5,10 +5,9 @@ pipeline {
         AWS_REGION = "us-east-1"
         EKS_CLUSTER_NAME = "docker_eks_test_cluster"
 
-        // Jenkins credentials
+        // DockerHub credentials stored in Jenkins
         DOCKERHUB_CREDS = credentials('docker-cred')
 
-        // Image details
         IMAGE_NAME = "${DOCKERHUB_CREDS_USR}/myapp"
         IMAGE_TAG  = "${BUILD_NUMBER}"
         FULL_IMAGE = "${IMAGE_NAME}:${IMAGE_TAG}"
@@ -16,7 +15,7 @@ pipeline {
 
     stages {
 
-        stage('Checkout Source Code') {
+        stage('Checkout Code') {
             steps {
                 git branch: 'main',
                     url: 'https://github.com/subratgithub/project-5.git'
@@ -41,22 +40,11 @@ pipeline {
             }
         }
 
-        stage('Push Image to Docker Hub') {
+        stage('Push Image') {
             steps {
                 sh '''
-                    echo "Pushing image to Docker Hub..."
+                    echo "Pushing image..."
                     docker push $FULL_IMAGE
-                '''
-            }
-        }
-
-        stage('Update Kubeconfig') {
-            steps {
-                sh '''
-                    echo "Updating kubeconfig..."
-                    aws eks update-kubeconfig \
-                        --region $AWS_REGION \
-                        --name $EKS_CLUSTER_NAME
                 '''
             }
         }
@@ -64,14 +52,26 @@ pipeline {
         stage('Deploy to EKS') {
             steps {
                 sh '''
-                    echo "Updating image in deployment YAML..."
-                    sed -i "s|image:.*|image: $FULL_IMAGE|g" K8s/deployment.yaml
-
                     echo "Deploying to EKS..."
-                    kubectl apply -f K8s/deployment.yaml
-                    kubectl apply -f K8s/service.yaml
 
-                    echo "Checking rollout status..."
+                    echo "Checking AWS identity..."
+                    aws sts get-caller-identity
+
+                    echo "Updating kubeconfig..."
+                    aws eks update-kubeconfig \
+                        --region $AWS_REGION \
+                        --name $EKS_CLUSTER_NAME
+
+                    echo "Verifying cluster access..."
+                    kubectl get nodes
+
+                    echo "Updating image in YAML..."
+                    sed -i "s|image:.*|image: $FULL_IMAGE|g" K8s/app.yaml
+
+                    echo "Applying Kubernetes manifests..."
+                    kubectl apply -f K8s/app.yaml
+
+                    echo "Waiting for rollout..."
                     kubectl rollout status deployment/dockerhub-sample-app
                 '''
             }
@@ -80,10 +80,10 @@ pipeline {
 
     post {
         success {
-            echo "✅ CI/CD pipeline completed successfully. App deployed to EKS!"
+            echo "Deployment successful."
         }
         failure {
-            echo "❌ Pipeline failed. Please check logs."
+            echo "Pipeline failed. Check logs."
         }
         always {
             sh 'docker logout'
