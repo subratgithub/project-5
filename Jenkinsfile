@@ -59,8 +59,8 @@ pipeline {
 
                     echo "Updating kubeconfig..."
                     aws eks update-kubeconfig \
-                        --region $AWS_REGION \
-                        --name $EKS_CLUSTER_NAME
+                        --region us-east-1 \
+                        --name docker_eks_test_cluster
 
                     echo "Verifying cluster access..."
                     kubectl get nodes
