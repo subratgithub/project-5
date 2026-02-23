@@ -2,11 +2,11 @@ pipeline {
     agent any
 
     environment {
-        AWS_REGION = "ap-south-1"
-        EKS_CLUSTER_NAME = "test-eks"
+        AWS_REGION = "us-east-1"
+        EKS_CLUSTER_NAME = "docker_eks_test_cluster"
 
         // Jenkins credentials
-        DOCKERHUB_CREDS = credentials('dockerhub-creds')
+        DOCKERHUB_CREDS = credentials('docker-cred')
 
         // Image details
         IMAGE_NAME = "${DOCKERHUB_CREDS_USR}/myapp"
@@ -19,7 +19,7 @@ pipeline {
         stage('Checkout Source Code') {
             steps {
                 git branch: 'main',
-                    url: 'https://github.com/chinabudhi123/project-5.git'
+                    url: 'https://github.com/subratgithub/project-5.git'
             }
         }
 
